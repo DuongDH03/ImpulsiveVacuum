@@ -1,17 +1,41 @@
 from tkinter import *
 from PIL import Image, ImageTk
 import random
-import itertools 
+import itertools
+import heapq 
 App = Tk()
 App.geometry('650x600')
 App.title('Vacumm simulator')
 
 global grid, current_position, goal_position 
 
+def a_star_search(grid, start, goal):
+    rows, cols = len(grid), len(grid[0])
+    queue = [(0, start)]  # The queue will hold tuples of (cost, node)
+    costs = {start: 0}  # This dictionary will hold the cost to reach each node
+    paths = {start: []}  # This dictionary will hold the path to each node
 
+    while queue:
+        cost, node = heapq.heappop(queue)
 
-def a_sreach(grid, current_position, goal_position):
-    return
+        if node == goal:
+            return paths[node]  # Return the path to the goal
+
+        for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+            new_x, new_y = node[0] + dx, node[1] + dy
+
+            if 0 <= new_x < rows and 0 <= new_y < cols and grid[new_x][new_y] != 1:
+                new_node = (new_x, new_y)
+                new_cost = cost + 1  # Assume each step costs 1
+
+                if new_node not in costs or new_cost < costs[new_node]:
+                    costs[new_node] = new_cost
+                    priority = new_cost + abs(goal[0] - new_x) + abs(goal[1] - new_y)  # Heuristic cost
+                    heapq.heappush(queue, (priority, new_node))
+                    paths[new_node] = paths[node] + [new_node]
+
+    return None  # Return None if no path is found
+
 
 
 
@@ -19,8 +43,8 @@ def handle_a(canvas,rectangle_ids):
     global current_position
     global goal_position
 
-    visited_nodes, path = a_sreach(grid, current_position, goal_position)
-    for i, step in enumerate(visited_nodes):
+    path = a_star_search(grid, current_position, goal_position)
+    for i, step in enumerate(path):
         if i > 0:
             current_position = step
             move =  current_position[0]* len(grid) + current_position[1] 
