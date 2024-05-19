@@ -11,7 +11,6 @@ global grid, current_position, goal_position
 
 
 def dfs_search(grid, current_position, goal_position):
-    print(goal_position)
     rows, cols = len(grid), len(grid[0])
     visited = [[False for _ in range(cols)] for _ in range(rows)]  
 
@@ -32,6 +31,7 @@ def dfs_search(grid, current_position, goal_position):
                 path = [(x, y)] + result  
         return path
     path = dfs_helper(current_position[0], current_position[1])
+    print(path)
     return path
 
 
@@ -40,8 +40,7 @@ def dfs_search(grid, current_position, goal_position):
 def handle_start(canvas,rectangle_ids):
     global current_position
     global goal_position
-    print(grid)
-    print(current_position)
+
     path = dfs_search(grid, current_position, goal_position)
 
     if path:
@@ -52,12 +51,17 @@ def handle_start(canvas,rectangle_ids):
                 canvas.itemconfig(rectangle_ids[move], fill="yellow")
                 App.update()  
                 App.after(100)
+    else:
+        not_found = Label(main_frame,text="Solution not found", bg="#222831" , font=("Bold",20), fg="white")
+        not_found.pack()            
 
 def draw_grid(page, number):
     global grid, current_position, goal_position
     pairs = []
-    for i in range(number):
+    number_obstacle = number if number == 4 else number * 2
+    for i in range(number_obstacle):
         pairs.append([random.randint(1,number-1),random.randint(1,number-1)])
+    print(pairs)    
     canvas = Canvas(page, width=400, height=400, bg="#76ABAE")
     step = 400  // number
     rectangle_ids = []
@@ -75,8 +79,10 @@ def draw_grid(page, number):
             if(x == 0 and y == 0):
                 rectangle_id = canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step, fill="yellow")
                 current_position = (x,y)
+
             elif(x == 400 // step -1  and y == 400 // step - 1):
                 rectangle_id = canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step, fill="blue")
+                grid[x][y] = 0
             elif(obstacle == False):     
                 rectangle_id =  canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step)
             rectangle_ids.append(rectangle_id)         
