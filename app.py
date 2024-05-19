@@ -37,7 +37,7 @@ def dfs_search(grid, current_position, goal_position):
 
 
 
-def handle_start(canvas,rectangle_ids):
+def handle_dfs(canvas,rectangle_ids):
     global current_position
     global goal_position
 
@@ -54,6 +54,12 @@ def handle_start(canvas,rectangle_ids):
     else:
         not_found = Label(main_frame,text="Solution not found", bg="#222831" , font=("Bold",20), fg="white")
         not_found.pack()            
+
+
+def handle_a(canvas, rectangle_ids):
+    # Write code for A* here
+    return
+
 
 def draw_grid(page, number):
     global grid, current_position, goal_position
@@ -88,8 +94,10 @@ def draw_grid(page, number):
             rectangle_ids.append(rectangle_id)         
                     
     canvas.pack()
-    start_btn = Button(page,text="START", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_start(canvas, rectangle_ids))
-    start_btn.pack()
+    start_dfs = Button(page,text="START DFS", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_dfs(canvas, rectangle_ids))
+    start_dfs.pack()
+    start_a = Button(page,text="START DFS", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_a(canvas, rectangle_ids))
+    start_a.pack()
 
 
 def frame_4():
