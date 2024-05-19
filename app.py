@@ -12,62 +12,56 @@ global grid, current_position, goal_position
 
 def dfs_search(grid, current_position, goal_position):
     rows, cols = len(grid), len(grid[0])
-    visited = [[False for _ in range(cols)] for _ in range(rows)]  
-
+    visited = [[False for _ in range(cols)] for _ in range(rows)] 
+    visited_nodes = [] # to keep track of visited nodes
     def dfs_helper(x, y):
         if x < 0 or x >= rows or y < 0 or y >= cols or visited[x][y] or grid[x][y] == 1:
-            return  
+            return None
 
-        visited[x][y] = True  
+        visited[x][y] = True
+        visited_nodes.append((x, y)) # add node to visited nodes
 
         if (x, y) == goal_position:
-            return [(x, y)]  
+            return [(x, y)]
 
-        path = None
-        for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:  
+        for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
             new_x, new_y = x + dx, y + dy
             result = dfs_helper(new_x, new_y)
             if result:
-                path = [(x, y)] + result  
-        return path
+                return [(x, y)] + result
+
+        return None
+
     path = dfs_helper(current_position[0], current_position[1])
-    print(path)
-    return path
+    print("Path found:", path)
+    return visited_nodes, path, step # return visited nodes if no path found
 
-
-
-
-def handle_dfs(canvas,rectangle_ids):
+def handle_start(canvas,rectangle_ids):
     global current_position
     global goal_position
 
-    path = dfs_search(grid, current_position, goal_position)
-
-    if path:
-        for i, step in enumerate(path):
-            if i > 0:
-                current_position = step
-                move =  current_position[0]* len(grid) + current_position[1] 
-                canvas.itemconfig(rectangle_ids[move], fill="yellow")
-                App.update()  
-                App.after(100)
-    else:
-        not_found = Label(main_frame,text="Solution not found", bg="#222831" , font=("Bold",20), fg="white")
-        not_found.pack()            
-
-
-def handle_a(canvas, rectangle_ids):
-    # Write code for A* here
-    return
-
+    visited_nodes, path, step = dfs_search(grid, current_position, goal_position)
+    for i, step in enumerate(visited_nodes):
+        if i > 0:
+            current_position = step
+            move =  current_position[0]* len(grid) + current_position[1] 
+            canvas.itemconfig(rectangle_ids[move], fill="yellow")
+            App.update()  
+            App.after(100)
+    # step_label = Label(main_frame, text=f"Steps taken: {step}")
+    # step_label.pack()    
+    if not path:
+        not_found = Label(main_frame, text="Solution not found")
+        not_found.pack               
 
 def draw_grid(page, number):
     global grid, current_position, goal_position
     pairs = []
-    number_obstacle = number if number == 4 else number * 2
-    for i in range(number_obstacle):
-        pairs.append([random.randint(1,number-1),random.randint(1,number-1)])
-    print(pairs)    
+    for i in range(number):
+        pair = [random.randint(0, number-1), random.randint(0, number-1)]
+        while pair in [[0, 0], [number-1, number-1]]:
+            pair = [random.randint(0, number-1), random.randint(0, number-1)]
+        pairs.append(pair)
     canvas = Canvas(page, width=400, height=400, bg="#76ABAE")
     step = 400  // number
     rectangle_ids = []
@@ -85,19 +79,15 @@ def draw_grid(page, number):
             if(x == 0 and y == 0):
                 rectangle_id = canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step, fill="yellow")
                 current_position = (x,y)
-
             elif(x == 400 // step -1  and y == 400 // step - 1):
                 rectangle_id = canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step, fill="blue")
-                grid[x][y] = 0
             elif(obstacle == False):     
                 rectangle_id =  canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step)
             rectangle_ids.append(rectangle_id)         
                     
     canvas.pack()
-    start_dfs = Button(page,text="START DFS", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_dfs(canvas, rectangle_ids))
-    start_dfs.pack()
-    start_a = Button(page,text="START DFS", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_a(canvas, rectangle_ids))
-    start_a.pack()
+    start_btn = Button(page,text="START", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_start(canvas, rectangle_ids))
+    start_btn.pack()
 
 
 def frame_4():
