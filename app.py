@@ -10,16 +10,42 @@ global grid, current_position, goal_position
 
 
 
+def a_sreach(grid, current_position, goal_position):
+    return
+
+
+
+def handle_a(canvas,rectangle_ids):
+    global current_position
+    global goal_position
+
+    visited_nodes, path = a_sreach(grid, current_position, goal_position)
+    for i, step in enumerate(visited_nodes):
+        if i > 0:
+            current_position = step
+            move =  current_position[0]* len(grid) + current_position[1] 
+            canvas.itemconfig(rectangle_ids[move], fill="yellow")
+            App.update()  
+            App.after(100)        
+    if path == None:
+        not_found = Label(main_frame, text="Solution not found")
+        not_found.pack()      
+
+
+
+
+
+
 def dfs_search(grid, current_position, goal_position):
     rows, cols = len(grid), len(grid[0])
     visited = [[False for _ in range(cols)] for _ in range(rows)] 
-    visited_nodes = [] # to keep track of visited nodes
+    visited_nodes = [] 
     def dfs_helper(x, y):
         if x < 0 or x >= rows or y < 0 or y >= cols or visited[x][y] or grid[x][y] == 1:
             return None
 
         visited[x][y] = True
-        visited_nodes.append((x, y)) # add node to visited nodes
+        visited_nodes.append((x, y))
 
         if (x, y) == goal_position:
             return [(x, y)]
@@ -34,13 +60,13 @@ def dfs_search(grid, current_position, goal_position):
 
     path = dfs_helper(current_position[0], current_position[1])
     print("Path found:", path)
-    return visited_nodes, path, step # return visited nodes if no path found
+    return visited_nodes, path # return visited nodes if no path found
 
-def handle_start(canvas,rectangle_ids):
+def handle_dfs(canvas,rectangle_ids):
     global current_position
     global goal_position
 
-    visited_nodes, path, step = dfs_search(grid, current_position, goal_position)
+    visited_nodes, path = dfs_search(grid, current_position, goal_position)
     for i, step in enumerate(visited_nodes):
         if i > 0:
             current_position = step
@@ -50,9 +76,9 @@ def handle_start(canvas,rectangle_ids):
             App.after(100)
     # step_label = Label(main_frame, text=f"Steps taken: {step}")
     # step_label.pack()    
-    if not path:
-        not_found = Label(main_frame, text="Solution not found")
-        not_found.pack               
+    if path == None:
+        not_found = Label(main_frame, text="Solution not found" , bg="white")
+        not_found.pack()               
 
 def draw_grid(page, number):
     global grid, current_position, goal_position
@@ -86,8 +112,10 @@ def draw_grid(page, number):
             rectangle_ids.append(rectangle_id)         
                     
     canvas.pack()
-    start_btn = Button(page,text="START", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_start(canvas, rectangle_ids))
-    start_btn.pack()
+    dfs_btn = Button(page,text="START DFS", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_dfs(canvas, rectangle_ids))
+    dfs_btn.pack()
+    a_btn = Button(page,text="START A*", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_a(canvas, rectangle_ids))
+    a_btn.pack()
 
 
 def frame_4():
