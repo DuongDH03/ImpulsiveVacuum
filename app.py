@@ -11,6 +11,7 @@ global grid, current_position, goal_position
 
 
 def dfs_search(grid, current_position, goal_position):
+    print(goal_position)
     rows, cols = len(grid), len(grid[0])
     visited = [[False for _ in range(cols)] for _ in range(rows)]  
 
@@ -31,7 +32,6 @@ def dfs_search(grid, current_position, goal_position):
                 path = [(x, y)] + result  
         return path
     path = dfs_helper(current_position[0], current_position[1])
-    print(path)
     return path
 
 
@@ -47,13 +47,11 @@ def handle_start(canvas,rectangle_ids):
     if path:
         for i, step in enumerate(path):
             if i > 0:
-                first  = current_position[0] + current_position[1]* len(grid)  
-                canvas.itemconfig(rectangle_ids[first], fill="#76ABAE")
                 current_position = step
-                second =  current_position[0] + current_position[1]* len(grid) 
-                canvas.itemconfig(rectangle_ids[second], fill="yellow")
+                move =  current_position[0]* len(grid) + current_position[1] 
+                canvas.itemconfig(rectangle_ids[move], fill="yellow")
                 App.update()  
-                App.after(200)
+                App.after(100)
 
 def draw_grid(page, number):
     global grid, current_position, goal_position
