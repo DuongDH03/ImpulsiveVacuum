@@ -6,49 +6,78 @@ import heapq
 App = Tk()
 App.geometry('650x600')
 App.title('Vacumm simulator')
+global grid, current_position, goal_position, start_position
+start_position = (0,0) 
 
-global grid, current_position, goal_position 
+
+img = Image.open("vacuum-cleaner-floor-svgrepo-com.png")
+img = img.resize((20, 20))
+photo = ImageTk.PhotoImage(img)
+App.wm_iconphoto(False, photo)
+
+
+
+
+
+def reset_grid(canvas, rectangle_ids):
+    global grid
+    for i, row in enumerate(grid):
+        for j, cell in enumerate(row):
+            move = i * len(grid) + j
+            if cell == 0:  # If the cell is not an obstacle
+                if (i,j) == start_position:
+                    canvas.itemconfig(rectangle_ids[move], fill="yellow")
+                else:
+                    canvas.itemconfig(rectangle_ids[move], fill="#76ABAE")  # Reset the color to default
+
 
 def a_star_search(grid, start, goal):
     rows, cols = len(grid), len(grid[0])
-    queue = [(0, start)]  # The queue will hold tuples of (cost, node)
-    costs = {start: 0}  # This dictionary will hold the cost to reach each node
-    paths = {start: []}  # This dictionary will hold the path to each node
-
+    queue = [(0, start)]  
+    costs = {start: 0}  
+    paths = {start: []} 
     while queue:
         cost, node = heapq.heappop(queue)
 
         if node == goal:
-            return paths[node]  # Return the path to the goal
+            return paths[node]  
 
         for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
             new_x, new_y = node[0] + dx, node[1] + dy
 
             if 0 <= new_x < rows and 0 <= new_y < cols and grid[new_x][new_y] != 1:
                 new_node = (new_x, new_y)
-                new_cost = cost + 1  # Assume each step costs 1
-
+                new_cost = cost + 1 
                 if new_node not in costs or new_cost < costs[new_node]:
                     costs[new_node] = new_cost
-                    priority = new_cost + abs(goal[0] - new_x) + abs(goal[1] - new_y)  # Heuristic cost
+                    priority = new_cost + abs(goal[0] - new_x) + abs(goal[1] - new_y)  
                     heapq.heappush(queue, (priority, new_node))
                     paths[new_node] = paths[node] + [new_node]
 
-    return None  # Return None if no path is found
+    return None 
 
 
 
 
-def handle_a(canvas,rectangle_ids):
+def handle_a(canvas,rectangle_ids, image_id, number):
     global current_position
     global goal_position
 
+    reset_grid(canvas, rectangle_ids)
+    current_position = start_position
     path = a_star_search(grid, current_position, goal_position)
     for i, step in enumerate(path):
-        if i > 0:
+        if i >= 0:
             current_position = step
             move =  current_position[0]* len(grid) + current_position[1] 
             canvas.itemconfig(rectangle_ids[move], fill="yellow")
+            canvas.delete(image_id)
+            if(number == 8): 
+                image_id = canvas.create_image(((current_position[0] + 1) * 50) -25  , ((current_position[1] + 1) * 50) - 25, image=photo)
+            if(number == 4): 
+                image_id = canvas.create_image(((current_position[0] + 1) * 100) -50  , ((current_position[1] + 1) * 100) - 50, image=photo)
+            if(number == 16): 
+                image_id = canvas.create_image(((current_position[0] + 1) * 25) - 12.5  , ((current_position[1] + 1) * 25) - 12.5, image=photo)   
             App.update()  
             App.after(100)        
     if path == None:
@@ -84,18 +113,27 @@ def dfs_search(grid, current_position, goal_position):
 
     path = dfs_helper(current_position[0], current_position[1])
     print("Path found:", path)
-    return visited_nodes, path # return visited nodes if no path found
+    return visited_nodes, path 
 
-def handle_dfs(canvas,rectangle_ids):
+def handle_dfs(canvas,rectangle_ids, image_id, number):
     global current_position
     global goal_position
 
+    reset_grid(canvas, rectangle_ids)
+    current_position = start_position
     visited_nodes, path = dfs_search(grid, current_position, goal_position)
     for i, step in enumerate(visited_nodes):
         if i > 0:
             current_position = step
             move =  current_position[0]* len(grid) + current_position[1] 
             canvas.itemconfig(rectangle_ids[move], fill="yellow")
+            canvas.delete(image_id)
+            if(number == 8): 
+                image_id = canvas.create_image(((current_position[0] + 1) * 50) -25  , ((current_position[1] + 1) * 50) - 25, image=photo)
+            if(number == 4): 
+                image_id = canvas.create_image(((current_position[0] + 1) * 100) -50  , ((current_position[1] + 1) * 100) - 50, image=photo)
+            if(number == 16): 
+                image_id = canvas.create_image(((current_position[0] + 1) * 25) - 12.5  , ((current_position[1] + 1) * 25) - 12.5, image=photo)          
             App.update()  
             App.after(100)
     # step_label = Label(main_frame, text=f"Steps taken: {step}")
@@ -106,6 +144,9 @@ def handle_dfs(canvas,rectangle_ids):
 
 def draw_grid(page, number):
     global grid, current_position, goal_position
+
+
+
     pairs = []
     for i in range(number):
         pair = [random.randint(0, number-1), random.randint(0, number-1)]
@@ -132,13 +173,13 @@ def draw_grid(page, number):
             elif(x == 400 // step -1  and y == 400 // step - 1):
                 rectangle_id = canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step, fill="blue")
             elif(obstacle == False):     
-                rectangle_id =  canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step)
-            rectangle_ids.append(rectangle_id)         
-                    
+                rectangle_id =  canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step)            
+            rectangle_ids.append(rectangle_id)
+    image_id = canvas.create_image( ((current_position[0]+1)*step) // 2,((current_position[1]+1) * step) // 2, image = photo)                
     canvas.pack()
-    dfs_btn = Button(page,text="START DFS", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_dfs(canvas, rectangle_ids))
+    dfs_btn = Button(page,text="START DFS", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_dfs(canvas, rectangle_ids, image_id, number))
     dfs_btn.pack()
-    a_btn = Button(page,text="START A*", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_a(canvas, rectangle_ids))
+    a_btn = Button(page,text="START A*", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_a(canvas, rectangle_ids, image_id, number))
     a_btn.pack()
 
 
@@ -176,10 +217,15 @@ def indicate(label, page):
     delete_frame()
     page()
 
+
+
+
 side_bar = Frame(App, bg="#31363F")
 side_bar.pack(side=LEFT)
 side_bar.pack_propagate(False)
 side_bar.configure(width=150,height=600)
+
+
 
 select_label = Label(side_bar, text="select size", font=("Bold",15), fg="#76ABAE", bg="#31363F")
 select_label.place(x=5, y= 20)
