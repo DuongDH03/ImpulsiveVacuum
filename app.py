@@ -6,7 +6,7 @@ import heapq
 App = Tk()
 App.geometry('650x600')
 App.title('Vacumm simulator')
-global grid, current_position, goal_position, start_position
+global grid, current_position, goal_position, start_position, image_id
 start_position = (0,0) 
 
 
@@ -20,13 +20,15 @@ App.wm_iconphoto(False, photo)
 
 
 def reset_grid(canvas, rectangle_ids):
-    global grid
+    global grid , image_id
     for i, row in enumerate(grid):
         for j, cell in enumerate(row):
             move = i * len(grid) + j
             if cell == 0:  # If the cell is not an obstacle
                 if (i,j) == start_position:
                     canvas.itemconfig(rectangle_ids[move], fill="yellow")
+                elif(i,j) == (len(grid) -1, len(grid) -1):
+                     canvas.itemconfig(rectangle_ids[move], fill="blue")
                 else:
                     canvas.itemconfig(rectangle_ids[move], fill="#76ABAE")  # Reset the color to default
 
@@ -59,10 +61,10 @@ def a_star_search(grid, start, goal):
 
 
 
-def handle_a(canvas,rectangle_ids, image_id, number):
+def handle_a(canvas,rectangle_ids, number):
     global current_position
     global goal_position
-
+    global image_id
     reset_grid(canvas, rectangle_ids)
     current_position = start_position
     path = a_star_search(grid, current_position, goal_position)
@@ -115,10 +117,10 @@ def dfs_search(grid, current_position, goal_position):
     print("Path found:", path)
     return visited_nodes, path 
 
-def handle_dfs(canvas,rectangle_ids, image_id, number):
+def handle_dfs(canvas,rectangle_ids, number):
     global current_position
     global goal_position
-
+    global image_id
     reset_grid(canvas, rectangle_ids)
     current_position = start_position
     visited_nodes, path = dfs_search(grid, current_position, goal_position)
@@ -143,7 +145,7 @@ def handle_dfs(canvas,rectangle_ids, image_id, number):
         not_found.pack()               
 
 def draw_grid(page, number):
-    global grid, current_position, goal_position
+    global grid, current_position, goal_position , image_id
 
 
 
@@ -177,9 +179,9 @@ def draw_grid(page, number):
             rectangle_ids.append(rectangle_id)
     image_id = canvas.create_image( ((current_position[0]+1)*step) // 2,((current_position[1]+1) * step) // 2, image = photo)                
     canvas.pack()
-    dfs_btn = Button(page,text="START DFS", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_dfs(canvas, rectangle_ids, image_id, number))
+    dfs_btn = Button(page,text="START DFS", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_dfs(canvas, rectangle_ids, number))
     dfs_btn.pack()
-    a_btn = Button(page,text="START A*", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_a(canvas, rectangle_ids, image_id, number))
+    a_btn = Button(page,text="START A*", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_a(canvas, rectangle_ids, number))
     a_btn.pack()
 
 
