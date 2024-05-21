@@ -20,14 +20,14 @@ App.wm_iconphoto(False, photo)
 
 
 def reset_grid(canvas, rectangle_ids):
-    global grid , image_id
+    global grid , image_id, goal_position
     for i, row in enumerate(grid):
         for j, cell in enumerate(row):
             move = i * len(grid) + j
             if cell == 0:  # If the cell is not an obstacle
                 if (i,j) == start_position:
                     canvas.itemconfig(rectangle_ids[move], fill="yellow")
-                elif(i,j) == (len(grid) -1, len(grid) -1):
+                elif(i,j) == goal_position:
                      canvas.itemconfig(rectangle_ids[move], fill="blue")
                 else:
                     canvas.itemconfig(rectangle_ids[move], fill="#76ABAE")  # Reset the color to default
@@ -137,12 +137,24 @@ def handle_dfs(canvas,rectangle_ids, number):
             if(number == 16): 
                 image_id = canvas.create_image(((current_position[0] + 1) * 25) - 12.5  , ((current_position[1] + 1) * 25) - 12.5, image=photo)          
             App.update()  
-            App.after(100)
-    # step_label = Label(main_frame, text=f"Steps taken: {step}")
-    # step_label.pack()    
+            App.after(100) 
     if path == None:
         not_found = Label(main_frame, text="Solution not found" , bg="white")
         not_found.pack()               
+
+
+
+
+def clicked(event,canvas, step):
+    global goal_position
+    print(goal_position)
+    x = event.x // step
+    y = event.y // step + 1
+    number = 400 //step
+    canvas.itemconfig(goal_position[0]*number + goal_position[1] + 1, fill="#76ABAE")
+    goal_position = (x,y-1)
+    print(goal_position)
+    canvas.itemconfig(x*number + y, fill = "blue")
 
 def draw_grid(page, number):
     global grid, current_position, goal_position , image_id
@@ -165,18 +177,23 @@ def draw_grid(page, number):
             obstacle = False
             for pair in pairs:  
                 if(x == pair[0] and y == pair[1]):
-                    rectangle_id = canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step, fill="#9B3922")
+                    obstacle_rect = canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step, fill="#9B3922")
+                    rectangle_ids.append(obstacle_rect)  
                     grid[x][y] = 1
                     obstacle = True
                     break
             if(x == 0 and y == 0):
-                rectangle_id = canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step, fill="yellow")
+                current = canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step, fill="yellow")
                 current_position = (x,y)
+                rectangle_ids.append(current)
             elif(x == 400 // step -1  and y == 400 // step - 1):
-                rectangle_id = canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step, fill="blue")
+                goal = canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step, fill="blue")
+                rectangle_ids.append(goal)
             elif(obstacle == False):     
-                rectangle_id =  canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step)            
-            rectangle_ids.append(rectangle_id)
+                rectangle_id =  canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step)
+                canvas.tag_bind(rectangle_id, "<Button-1>", lambda event: clicked(event,canvas, step))
+                rectangle_ids.append(rectangle_id)
+    reset_grid(canvas,rectangle_ids)             
     image_id = canvas.create_image( ((current_position[0]+1)*step) // 2,((current_position[1]+1) * step) // 2, image = photo)                
     canvas.pack()
     dfs_btn = Button(page,text="START DFS", fg="#76ABAE", font=("Bold",15), border=0 ,command=lambda:handle_dfs(canvas, rectangle_ids, number))
