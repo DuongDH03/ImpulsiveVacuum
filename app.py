@@ -6,8 +6,9 @@ import heapq
 App = Tk()
 App.geometry('650x600')
 App.title('Vacumm simulator')
-global grid, current_position, goal_position, start_position, image_id
+global grid, current_position, goal_position, start_position, image_id, goal_positions
 start_position = (0,0) 
+goal_positions = list()
 
 
 img = Image.open("vacuum-cleaner-floor-svgrepo-com.png")
@@ -15,23 +16,81 @@ img = img.resize((20, 20))
 photo = ImageTk.PhotoImage(img)
 App.wm_iconphoto(False, photo)
 
-
-
-
-
+def reset_goals():
+    global goal_positions
+    goal_positions = list()
+    #goal_positions.append((len(grid)-1, len(grid)-1))
+    
 def reset_grid(canvas, rectangle_ids):
-    global grid , image_id, goal_position
+    global grid , image_id, goal_positions
     for i, row in enumerate(grid):
         for j, cell in enumerate(row):
             move = i * len(grid) + j
             if cell == 0:  # If the cell is not an obstacle
                 if (i,j) == start_position:
                     canvas.itemconfig(rectangle_ids[move], fill="yellow")
-                elif(i,j) == goal_position:
+                elif(i,j) in goal_positions:
                      canvas.itemconfig(rectangle_ids[move], fill="blue")
                 else:
                     canvas.itemconfig(rectangle_ids[move], fill="#76ABAE")  # Reset the color to default
 
+def nearest_goal(current_position, goal_positions):
+    return min(goal_positions, key=lambda x: abs(x[0] - current_position[0]) + abs(x[1] - current_position[1]))
+
+'''def a_star_search(grid, start, goal):
+    rows, cols = len(grid), len(grid[0])
+    path = {start: []} 
+    queue = [(0, start)]  
+    costs = {start: 0}  
+    working_goal = goal.copy()
+    print("Working: ")
+    print(working_goal)
+
+    while queue:
+        cost, node = heapq.heappop(queue)
+
+        if node in working_goal:
+            working_goal.remove(node)
+            print("Working: ")
+            print(working_goal)
+            if not working_goal:
+                return path[node]
+            else:
+                costs = {node: 0}
+                goal_near = nearest_goal(node, working_goal)
+                priority = cost + abs(goal_near[0] - node[0]) + abs(goal_near[1] - node[1])
+                heapq.heappush(queue, (priority, node))
+                continue       
+        
+        for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+            new_x, new_y = node[0] + dx, node[1] + dy
+
+            if 0 <= new_x < rows and 0 <= new_y < cols and grid[new_x][new_y] != 1:
+                new_node = (new_x, new_y)
+                new_cost = cost + 1 
+                if new_node not in costs or new_cost < costs[new_node] or new_node not in path:
+                    costs[new_node] = new_cost
+                    goal_near = nearest_goal(new_node, working_goal)
+                    print("Goal near: ", goal_near)
+                    priority = new_cost + abs(goal_near[0] - new_x) + abs(goal_near[1] - new_y)
+                    heapq.heappush(queue, (priority, new_node))
+                    print("Priority: ", queue)
+                    path[new_node] = path[node] + [new_node]
+                    print("Path: ", path)
+
+    return None '''
+def a_star_search_multiple_goals(grid, start, goals):
+    local_goals = goals.copy()
+    local_start = start
+    path = []
+
+    while(local_goals):
+        goal = nearest_goal(local_start, local_goals)
+        local_goals.remove(goal)
+        path += a_star_search(grid, local_start, goal)
+        local_start = goal
+    
+    return path
 
 def a_star_search(grid, start, goal):
     rows, cols = len(grid), len(grid[0])
@@ -58,16 +117,21 @@ def a_star_search(grid, start, goal):
 
     return None 
 
-
-
-
 def handle_a(canvas,rectangle_ids, number):
     global current_position
-    global goal_position
+    global goal_positions
     global image_id
+
     reset_grid(canvas, rectangle_ids)
     current_position = start_position
-    path = a_star_search(grid, current_position, goal_position)
+    
+    path = a_star_search_multiple_goals(grid, current_position, goal_positions)
+
+    if path == None:
+        not_found = Label(main_frame, text="Solution not found")
+        not_found.pack()  
+        return 
+    print("Path found:", path)
     for i, step in enumerate(path):
         if i >= 0:
             current_position = step
@@ -82,16 +146,10 @@ def handle_a(canvas,rectangle_ids, number):
                 image_id = canvas.create_image(((current_position[0] + 1) * 25) - 12.5  , ((current_position[1] + 1) * 25) - 12.5, image=photo)   
             App.update()  
             App.after(100)        
-    if path == None:
-        not_found = Label(main_frame, text="Solution not found")
-        not_found.pack()      
+    
 
-
-
-
-
-
-def dfs_search(grid, current_position, goal_position):
+def dfs_search(grid, current_position, goal_positions):
+    working_goal = goal_positions.copy()
     rows, cols = len(grid), len(grid[0])
     visited = [[False for _ in range(cols)] for _ in range(rows)] 
     visited_nodes = [] 
@@ -102,14 +160,16 @@ def dfs_search(grid, current_position, goal_position):
         visited[x][y] = True
         visited_nodes.append((x, y))
 
-        if (x, y) == goal_position:
-            return [(x, y)]
+        if (x, y) in working_goal:
+            working_goal.remove((x, y))
+            if not working_goal:
+                return (x, y)
 
         for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
             new_x, new_y = x + dx, y + dy
             result = dfs_helper(new_x, new_y)
             if result:
-                return [(x, y)] + result
+                return result
 
         return None
 
@@ -118,12 +178,12 @@ def dfs_search(grid, current_position, goal_position):
     return visited_nodes, path 
 
 def handle_dfs(canvas,rectangle_ids, number):
-    global current_position
-    global goal_position
+    local_current_position = start_position
+    local_goal_positions = goal_positions.copy()
     global image_id
     reset_grid(canvas, rectangle_ids)
     current_position = start_position
-    visited_nodes, path = dfs_search(grid, current_position, goal_position)
+    visited_nodes, path = dfs_search(grid, current_position, goal_positions)
     for i, step in enumerate(visited_nodes):
         if i > 0:
             current_position = step
@@ -146,20 +206,40 @@ def handle_dfs(canvas,rectangle_ids, number):
 
 
 def clicked(event,canvas, step):
-    global goal_position
-    print(goal_position)
+    global goal_positions
+
     x = event.x // step
     y = event.y // step + 1
     number = 400 //step
-    canvas.itemconfig(goal_position[0]*number + goal_position[1] + 1, fill="#76ABAE")
+
     goal_position = (x,y-1)
-    print(goal_position)
-    canvas.itemconfig(x*number + y, fill = "blue")
+
+    if goal_position in goal_positions:
+        goal_positions.remove(goal_position)
+        canvas.itemconfig(x*number + y, fill="#76ABAE")
+    else:
+        if grid[x][y-1] == 1:
+            grid[x][y-1] = 0
+        goal_positions.append(goal_position)
+        canvas.itemconfig(x*number + y, fill = "blue")
+
+def right_click(event,canvas, step):
+    global grid
+    x = event.x // step
+    y = event.y // step + 1
+    number = 400 // step
+
+    if grid[x][y-1] == 1:
+        grid[x][y-1] = 0
+        canvas.itemconfig(x*number + y, fill="#76ABAE") 
+    else:
+        if (x, y) in goal_positions:
+            goal_positions.remove((x, y))
+        grid[x][y-1] = 1
+        canvas.itemconfig(x*number + y, fill="#9B3922") 
 
 def draw_grid(page, number):
-    global grid, current_position, goal_position , image_id
-
-
+    global grid, current_position, image_id, goal_positions
 
     pairs = []
     for i in range(number):
@@ -172,6 +252,7 @@ def draw_grid(page, number):
     rectangle_ids = []
     grid = [[0 for _ in range(number)] for _ in range(number)]
     goal_position = (len(grid)-1, len(grid)-1)
+    goal_positions.append(goal_position)
     for x in range(0,400 // step , 1):
         for y in range(0, 400 // step, 1):
             obstacle = False
@@ -192,6 +273,7 @@ def draw_grid(page, number):
             elif(obstacle == False):     
                 rectangle_id =  canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step)
                 canvas.tag_bind(rectangle_id, "<Button-1>", lambda event: clicked(event,canvas, step))
+                canvas.tag_bind(rectangle_id, "<Button-3>", lambda event: right_click(event,canvas, step))
                 rectangle_ids.append(rectangle_id)
     reset_grid(canvas,rectangle_ids)             
     image_id = canvas.create_image( ((current_position[0]+1)*step) // 2,((current_position[1]+1) * step) // 2, image = photo)                
@@ -232,12 +314,10 @@ def delete_frame():
 
 def indicate(label, page):
     hide_indicator()
+    reset_goals()
     label.config(bg = "#76ABAE")
     delete_frame()
     page()
-
-
-
 
 side_bar = Frame(App, bg="#31363F")
 side_bar.pack(side=LEFT)
@@ -255,15 +335,10 @@ button_4_indicator = Label(side_bar, text="",bg="#31363F")
 button_4_indicator.place(x = 5, y = 45, width=5, height=30)
 
 
-
-
 button_8 = Button(side_bar, text="8 x 8", font=("Bold",10), fg="#76ABAE", bd=0, bg="#31363F", command=lambda:indicate(button_8_indicator, frame_8))
 button_8.place(x=25, y= 100)
 button_8_indicator = Label(side_bar, text="",bg="#31363F")
 button_8_indicator.place(x = 5, y = 95, width=5, height=30)
-
-
-
 
 
 button_16 = Button(side_bar, text="16 x 16", font=("Bold",10), fg="#76ABAE", bd=0, bg="#31363F", command=lambda:indicate(button_16_indicator, frame_16))
@@ -272,12 +347,10 @@ button_16_indicator = Label(side_bar, text="",bg="#31363F")
 button_16_indicator.place(x = 5, y = 145, width=5, height=30)
 
 
-
 main_frame = Frame(App, highlightbackground='black',highlightthickness=2, bg="#222831")
 main_frame.pack(side=LEFT)
 main_frame.pack_propagate(False)
 main_frame.configure(width=500,height=600)
-
 
 
 App.mainloop()
