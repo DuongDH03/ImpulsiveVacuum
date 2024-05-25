@@ -80,14 +80,15 @@ def nearest_goal(current_position, goal_positions):
 
     return None '''
 def a_star_search_multiple_goals(grid, start, goals):
+    local_goals = goals.copy()
+    local_start = start
     path = []
-    heapq.heapify(goals)
 
-    while(goals):
-        goal = nearest_goal(start, goals)
-        goals.remove(goal)
-        path += a_star_search(grid, start, goal)
-        start = goal
+    while(local_goals):
+        goal = nearest_goal(local_start, local_goals)
+        local_goals.remove(goal)
+        path += a_star_search(grid, local_start, goal)
+        local_start = goal
     
     return path
 
@@ -177,8 +178,8 @@ def dfs_search(grid, current_position, goal_positions):
     return visited_nodes, path 
 
 def handle_dfs(canvas,rectangle_ids, number):
-    global current_position
-    global goal_positions
+    local_current_position = start_position
+    local_goal_positions = goal_positions.copy()
     global image_id
     reset_grid(canvas, rectangle_ids)
     current_position = start_position
@@ -217,24 +218,25 @@ def clicked(event,canvas, step):
         goal_positions.remove(goal_position)
         canvas.itemconfig(x*number + y, fill="#76ABAE")
     else:
+        if grid[x][y-1] == 1:
+            grid[x][y-1] = 0
         goal_positions.append(goal_position)
         canvas.itemconfig(x*number + y, fill = "blue")
 
 def right_click(event,canvas, step):
-    global goal_positions
-
+    global grid
     x = event.x // step
     y = event.y // step + 1
-    number = 400 //step
+    number = 400 // step
 
-    goal_position = (x,y-1)
-
-    if goal_position in goal_positions:
-        goal_positions.remove(goal_position)
-        canvas.itemconfig(x*number + y, fill="#76ABAE")
+    if grid[x][y-1] == 1:
+        grid[x][y-1] = 0
+        canvas.itemconfig(x*number + y, fill="#76ABAE") 
     else:
-        goal_positions.append(goal_position)
-        canvas.itemconfig(x*number + y, fill = "blue")
+        if (x, y) in goal_positions:
+            goal_positions.remove((x, y))
+        grid[x][y-1] = 1
+        canvas.itemconfig(x*number + y, fill="#9B3922") 
 
 def draw_grid(page, number):
     global grid, current_position, image_id, goal_positions
@@ -271,6 +273,7 @@ def draw_grid(page, number):
             elif(obstacle == False):     
                 rectangle_id =  canvas.create_rectangle(x * step,y * step,x*step + step,y*step + step)
                 canvas.tag_bind(rectangle_id, "<Button-1>", lambda event: clicked(event,canvas, step))
+                canvas.tag_bind(rectangle_id, "<Button-3>", lambda event: right_click(event,canvas, step))
                 rectangle_ids.append(rectangle_id)
     reset_grid(canvas,rectangle_ids)             
     image_id = canvas.create_image( ((current_position[0]+1)*step) // 2,((current_position[1]+1) * step) // 2, image = photo)                
@@ -332,15 +335,10 @@ button_4_indicator = Label(side_bar, text="",bg="#31363F")
 button_4_indicator.place(x = 5, y = 45, width=5, height=30)
 
 
-
-
 button_8 = Button(side_bar, text="8 x 8", font=("Bold",10), fg="#76ABAE", bd=0, bg="#31363F", command=lambda:indicate(button_8_indicator, frame_8))
 button_8.place(x=25, y= 100)
 button_8_indicator = Label(side_bar, text="",bg="#31363F")
 button_8_indicator.place(x = 5, y = 95, width=5, height=30)
-
-
-
 
 
 button_16 = Button(side_bar, text="16 x 16", font=("Bold",10), fg="#76ABAE", bd=0, bg="#31363F", command=lambda:indicate(button_16_indicator, frame_16))
@@ -349,12 +347,10 @@ button_16_indicator = Label(side_bar, text="",bg="#31363F")
 button_16_indicator.place(x = 5, y = 145, width=5, height=30)
 
 
-
 main_frame = Frame(App, highlightbackground='black',highlightthickness=2, bg="#222831")
 main_frame.pack(side=LEFT)
 main_frame.pack_propagate(False)
 main_frame.configure(width=500,height=600)
-
 
 
 App.mainloop()
