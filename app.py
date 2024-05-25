@@ -10,6 +10,7 @@ global grid, current_position, goal_position, start_position, image_id, goal_pos
 start_position = (0,0) 
 goal_positions = list()
 
+
 img = Image.open("vacuum-cleaner-floor-svgrepo-com.png")
 img = img.resize((20, 20))
 photo = ImageTk.PhotoImage(img)
@@ -146,7 +147,8 @@ def handle_a(canvas,rectangle_ids, number):
             App.after(100)        
     
 
-def dfs_search(grid, current_position, goal_position):
+def dfs_search(grid, current_position, goal_positions):
+    working_goal = goal_positions.copy()
     rows, cols = len(grid), len(grid[0])
     visited = [[False for _ in range(cols)] for _ in range(rows)] 
     visited_nodes = [] 
@@ -157,14 +159,16 @@ def dfs_search(grid, current_position, goal_position):
         visited[x][y] = True
         visited_nodes.append((x, y))
 
-        if (x, y) == goal_position:
-            return [(x, y)]
+        if (x, y) in working_goal:
+            working_goal.remove((x, y))
+            if not working_goal:
+                return (x, y)
 
         for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
             new_x, new_y = x + dx, y + dy
             result = dfs_helper(new_x, new_y)
             if result:
-                return [(x, y)] + result
+                return result
 
         return None
 
@@ -174,11 +178,11 @@ def dfs_search(grid, current_position, goal_position):
 
 def handle_dfs(canvas,rectangle_ids, number):
     global current_position
-    global goal_position
+    global goal_positions
     global image_id
     reset_grid(canvas, rectangle_ids)
     current_position = start_position
-    visited_nodes, path = dfs_search(grid, current_position, goal_position)
+    visited_nodes, path = dfs_search(grid, current_position, goal_positions)
     for i, step in enumerate(visited_nodes):
         if i > 0:
             current_position = step
@@ -208,12 +212,29 @@ def clicked(event,canvas, step):
     number = 400 //step
 
     goal_position = (x,y-1)
-    goal_positions.append(goal_position)
 
-    #canvas.itemconfig(goal_position[0]*number + goal_position[1] + 1, fill="#76ABAE")
-    
-    print(goal_positions)
-    canvas.itemconfig(x*number + y, fill = "blue")
+    if goal_position in goal_positions:
+        goal_positions.remove(goal_position)
+        canvas.itemconfig(x*number + y, fill="#76ABAE")
+    else:
+        goal_positions.append(goal_position)
+        canvas.itemconfig(x*number + y, fill = "blue")
+
+def right_click(event,canvas, step):
+    global goal_positions
+
+    x = event.x // step
+    y = event.y // step + 1
+    number = 400 //step
+
+    goal_position = (x,y-1)
+
+    if goal_position in goal_positions:
+        goal_positions.remove(goal_position)
+        canvas.itemconfig(x*number + y, fill="#76ABAE")
+    else:
+        goal_positions.append(goal_position)
+        canvas.itemconfig(x*number + y, fill = "blue")
 
 def draw_grid(page, number):
     global grid, current_position, image_id, goal_positions
@@ -294,9 +315,6 @@ def indicate(label, page):
     label.config(bg = "#76ABAE")
     delete_frame()
     page()
-
-
-
 
 side_bar = Frame(App, bg="#31363F")
 side_bar.pack(side=LEFT)
