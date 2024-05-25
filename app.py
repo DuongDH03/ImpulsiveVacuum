@@ -38,16 +38,20 @@ def a_star_search(grid, start, goal):
     path = {start: []} 
     queue = [(0, start)]  
     costs = {start: 0}  
+    working_goal = goal.copy()
+    print("Working: ")
+    print(working_goal)
+
     while queue:
         cost, node = heapq.heappop(queue)
-        current_goal = goal[0]
+        
+        if node in working_goal:
+            working_goal.remove(node)
 
-        if node in goal:
-            goal.remove(node)
-
-            if not goal:
+            if not working_goal:
                 return path[node] + [node]
-
+            
+        
         for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
             new_x, new_y = node[0] + dx, node[1] + dy
 
@@ -56,7 +60,7 @@ def a_star_search(grid, start, goal):
                 new_cost = cost + 1 
                 if new_node not in costs or new_cost < costs[new_node]:
                     costs[new_node] = new_cost
-                    priority = new_cost + abs(current_goal[0] - new_x) + abs(current_goal[1] - new_y)  
+                    priority = new_cost + abs(working_goal[0][0] - new_x) + abs(working_goal[0][1] - new_y)  
                     heapq.heappush(queue, (priority, new_node))
                     path[new_node] = path[node] + [new_node]
 
@@ -149,20 +153,22 @@ def handle_dfs(canvas,rectangle_ids, number):
 
 
 def clicked(event,canvas, step):
-    global goal_positions, goal_position
-    print(goal_position)
+    global goal_positions
+
     x = event.x // step
     y = event.y // step + 1
     number = 400 //step
+
+    goal_position = (x,y-1)
     goal_positions.append(goal_position)
 
     #canvas.itemconfig(goal_position[0]*number + goal_position[1] + 1, fill="#76ABAE")
-    goal_position = (x,y-1)
-    print(goal_position)
+    
+    print(goal_positions)
     canvas.itemconfig(x*number + y, fill = "blue")
 
 def draw_grid(page, number):
-    global grid, current_position, goal_position , image_id, goal_positions
+    global grid, current_position, image_id, goal_positions
 
     pairs = []
     for i in range(number):
