@@ -15,10 +15,11 @@ img = img.resize((20, 20))
 photo = ImageTk.PhotoImage(img)
 App.wm_iconphoto(False, photo)
 
-
-
-
-
+def reset_goals():
+    global goal_positions
+    goal_positions = list()
+    #goal_positions.append((len(grid)-1, len(grid)-1))
+    
 def reset_grid(canvas, rectangle_ids):
     global grid , image_id, goal_positions
     for i, row in enumerate(grid):
@@ -32,8 +33,10 @@ def reset_grid(canvas, rectangle_ids):
                 else:
                     canvas.itemconfig(rectangle_ids[move], fill="#76ABAE")  # Reset the color to default
 
+def nearest_goal(current_position, goal_positions):
+    return min(goal_positions, key=lambda x: abs(x[0] - current_position[0]) + abs(x[1] - current_position[1]))
 
-def a_star_search(grid, start, goal):
+'''def a_star_search(grid, start, goal):
     rows, cols = len(grid), len(grid[0])
     path = {start: []} 
     queue = [(0, start)]  
@@ -44,14 +47,60 @@ def a_star_search(grid, start, goal):
 
     while queue:
         cost, node = heapq.heappop(queue)
-        
+
         if node in working_goal:
             working_goal.remove(node)
-
+            print("Working: ")
+            print(working_goal)
             if not working_goal:
-                return path[node] + [node]
-            
+                return path[node]
+            else:
+                costs = {node: 0}
+                goal_near = nearest_goal(node, working_goal)
+                priority = cost + abs(goal_near[0] - node[0]) + abs(goal_near[1] - node[1])
+                heapq.heappush(queue, (priority, node))
+                continue       
         
+        for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+            new_x, new_y = node[0] + dx, node[1] + dy
+
+            if 0 <= new_x < rows and 0 <= new_y < cols and grid[new_x][new_y] != 1:
+                new_node = (new_x, new_y)
+                new_cost = cost + 1 
+                if new_node not in costs or new_cost < costs[new_node] or new_node not in path:
+                    costs[new_node] = new_cost
+                    goal_near = nearest_goal(new_node, working_goal)
+                    print("Goal near: ", goal_near)
+                    priority = new_cost + abs(goal_near[0] - new_x) + abs(goal_near[1] - new_y)
+                    heapq.heappush(queue, (priority, new_node))
+                    print("Priority: ", queue)
+                    path[new_node] = path[node] + [new_node]
+                    print("Path: ", path)
+
+    return None '''
+def a_star_search_multiple_goals(grid, start, goals):
+    path = []
+    heapq.heapify(goals)
+
+    while(goals):
+        goal = nearest_goal(start, goals)
+        goals.remove(goal)
+        path += a_star_search(grid, start, goal)
+        start = goal
+    
+    return path
+
+def a_star_search(grid, start, goal):
+    rows, cols = len(grid), len(grid[0])
+    queue = [(0, start)]  
+    costs = {start: 0}  
+    paths = {start: []} 
+    while queue:
+        cost, node = heapq.heappop(queue)
+
+        if node == goal:
+            return paths[node]  
+
         for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
             new_x, new_y = node[0] + dx, node[1] + dy
 
@@ -60,9 +109,9 @@ def a_star_search(grid, start, goal):
                 new_cost = cost + 1 
                 if new_node not in costs or new_cost < costs[new_node]:
                     costs[new_node] = new_cost
-                    priority = new_cost + abs(working_goal[0][0] - new_x) + abs(working_goal[0][1] - new_y)  
+                    priority = new_cost + abs(goal[0] - new_x) + abs(goal[1] - new_y)  
                     heapq.heappush(queue, (priority, new_node))
-                    path[new_node] = path[node] + [new_node]
+                    paths[new_node] = paths[node] + [new_node]
 
     return None 
 
@@ -70,18 +119,17 @@ def handle_a(canvas,rectangle_ids, number):
     global current_position
     global goal_positions
     global image_id
-    #goal_position = list(goal_positions)[0]
 
     reset_grid(canvas, rectangle_ids)
     current_position = start_position
     
-    path = a_star_search(grid, current_position, goal_positions)
+    path = a_star_search_multiple_goals(grid, current_position, goal_positions)
 
     if path == None:
         not_found = Label(main_frame, text="Solution not found")
         not_found.pack()  
         return 
-    
+    print("Path found:", path)
     for i, step in enumerate(path):
         if i >= 0:
             current_position = step
@@ -242,6 +290,7 @@ def delete_frame():
 
 def indicate(label, page):
     hide_indicator()
+    reset_goals()
     label.config(bg = "#76ABAE")
     delete_frame()
     page()
